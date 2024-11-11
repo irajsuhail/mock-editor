@@ -4,8 +4,15 @@ import './globals.css';
 import { OpenEditorsProvider } from '@/context/OpenEditorsContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { BranchProvider } from '@/context/BranchContext';
+import { useIsClient } from '@uidotdev/usehooks';
 
 export default function RootLayout({ children }) {
+  const isClient = useIsClient();
+
+  if (isClient === false) {
+    return null;
+  }
+
   return (
     <html lang="en">
       <head>
