@@ -1,101 +1,116 @@
-import Image from "next/image";
+'use client';
+
+import files from '../../public/data/files.json';
+import generateFilesTree, { getLanguage } from '@/utils/generateFilesTree';
+import FilesystemItem from '@/components/ui/FileSystemItem';
+import MonacoEditor from '@/components/code/MonacoEditor';
+import { useOpenEditors } from '@/context/OpenEditorsContext';
+import useHandleFileButtonClick from '@/hooks/useHandleFileButtonClick';
+import { useEffect, useCallback } from 'react';
+import { useLocalStorage } from '@uidotdev/usehooks';
+import BranchSwitcher from '@/components/code/BranchSwitcher';
+import ThemeSwitcher from '@/components/ui/ThemeSwitcher';
+import { useBranch } from '@/context/BranchContext';
+import OpenEditorsSection from '@/components/code/OpenEditorsSection';
+import SectionHeader from '@/components/ui/SectionHeader';
+import { ReflexContainer, ReflexSplitter, ReflexElement } from 'react-reflex';
+import 'react-reflex/styles.css';
+import Image from 'next/image';
+
+let filesSystem = generateFilesTree(files.data.files);
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const { openFiles, closeEditor, selectedFile, openEditors } =
+    useOpenEditors();
+  const handleFileButtonClick = useHandleFileButtonClick();
+  const [, setStoredWorksheets] = useLocalStorage('openWorksheets', []);
+  const { currentBranch, loading, error } = useBranch();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+  const fetchWorkSheets = useCallback(async () => {
+    try {
+      console.log('Fetching worksheets');
+      const response = await fetch('/data/open-worksheets.json');
+      const data = await response.json();
+      const workSheets = data.activeWorksheets.map((worksheet) => ({
+        ...worksheet,
+        language: getLanguage(worksheet?.relativePath),
+      }));
+
+      setStoredWorksheets(workSheets);
+      openEditors(workSheets);
+    } catch (error) {
+      console.error('Error fetching worksheets:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWorkSheets();
+  }, [currentBranch]);
+
+  return (
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-950">
+      {loading ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="flex flex-col items-center gap-5">
             <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src="icons/branch.svg"
+              width={120}
+              height={120}
+              alt="Illustration for loading state of branch"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-400 text-center">
+              Loading Branch
+            </p>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : error ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="flex flex-col items-center gap-5">
+            <Image
+              src="icons/cross.svg"
+              width={120}
+              height={120}
+              alt="Illustration for error"
+            />
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-400 text-center">
+              Something went wrong
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <ReflexContainer orientation="vertical" className="code-container">
+            <ReflexElement className="left-pane" minSize={240} size={320}>
+              <div className="pane-content w-full col-span-1 grid grid-rows-8 code-container">
+                <OpenEditorsSection
+                  data={openFiles}
+                  selectedFile={selectedFile}
+                  onClick={handleFileButtonClick}
+                  onClose={(file) => closeEditor(file)}
+                />
+                <div className="row-span-6 pb-8">
+                  <SectionHeader>{filesSystem[0].name}</SectionHeader>
+                  <div className="ps-2 overflow-y-auto h-full">
+                    {filesSystem[0]?.children?.map((item) => (
+                      <FilesystemItem item={item} key={item.name} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </ReflexElement>
+            <ReflexSplitter className="opacity-50" />
+            <ReflexElement className="right-pane" minSize={240}>
+              <div className="pane-content col-span-5 h-full border border-gray-200 dark:border-gray-900">
+                <MonacoEditor />
+              </div>
+            </ReflexElement>
+          </ReflexContainer>
+        </>
+      )}
+      <div className="h-8 overflow-hidden flex items-center justify-between px-5 border border-gray-200 bg-gray-100 dark:bg-gray-950 dark:border-gray-900 text-black dark:text-gray-400 z-10">
+        <BranchSwitcher />
+        <ThemeSwitcher />
+      </div>
     </div>
   );
 }
